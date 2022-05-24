@@ -1,0 +1,6 @@
+{
+  "ovf_filename": "videomesh.ova",
+  "vm_internal_nw": "Internal Interface Network",
+  "vm_external_nw": "External Interface Network",
+  "dual_ip_deployment": "false"
+}
