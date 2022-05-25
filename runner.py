@@ -1,14 +1,18 @@
 import csv
-from textwrap import indent
 import time
 import multiprocessing as mp
 import re
 import json
 from driver_guest_info import worker
 from deployment_progress import progress
+from os import path
 
 
 def validation_check():
+    with open('config.json', 'r') as fh:
+        config_details = json.load(fh)
+
+    ovf_filename = config_details['ovf_filename']
     # regex = r"^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
     regex = r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"
     hostname_regex = r"(?!-)[A-Z\d-]{1,63}(?<!-)$"
@@ -19,6 +23,10 @@ def validation_check():
     ips = list()
     not_deployed = {}
     flag = False
+
+    if not path.exists(ovf_filename):
+        print(f'OVF file {ovf_filename} does not exist in the current directory. Please place it and re-run.\n')
+        flag = True
 
     for i, row in enumerate(csv_reader):
         error = []
@@ -37,9 +45,9 @@ def validation_check():
         if not re.search(regex, row[8]):
             error.append("DNS")
             flag = True
-        if not row[9]:
-            error.append("Blank NTP")
-            flag = True
+        # if not re.search(regex,row[9]):
+        #    error.append("NTP")
+        #    flag = True
         if not (row[13] == "VMNLite" or row[13] == "CMS1000"):
             error.append("Deployment Type")
             flag = True
@@ -87,9 +95,6 @@ if __name__ == "__main__":
     results = {row[5]: pool.apply_async(worker, row) for row in csv_reader}
     print(results)
     progress(results)
-
-    # for i in results:
-    # print(i, results.get(i).get())
 
     csv_file.close()
     end_time = time.time()

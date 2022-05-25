@@ -28,13 +28,27 @@ def progress(data):
     killed_pids = set()
     failed_ip = set()
     progress = []
-    # regex_search = r"ipaddress=^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
     regex_search = r'ipaddress=[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
     while True:
         if time_taken_count == n or (disk_count == n and task_count == n):
             break
         line = fh.readline()
         if line:
+            if re.search(r"Invalid target datastor", line):
+                try:
+                    ip = re.search(regex_search, line).group().split('=')[-1]
+                    if ip in disk_percent:
+                        del disk_percent[ip]
+                        del task_percent[ip]
+                        del disk_flag[ip]
+                        del task_flag[ip]
+                        n -= 1
+                        time_taken_count -= 1
+                        progress.append(f"{ip} could not be deployed due to wrong datastore name.")
+                except AttributeError:
+                    continue
+                else:
+                    failed_ip.add(ip)
             if re.search(r"TIME TAKEN", line):
                 time_taken_count += 1
             error_mat = re.search(r"b'[*]{30}'", line)
@@ -42,7 +56,7 @@ def progress(data):
                 try:
                     ip = re.search(regex_search, line).group().split('=')[-1]
                     process_id = int(re.search(r'Process\s+\d+', line).group().split()[-1])
-                    if process_id not in killed_pids:
+                    if process_id not in killed_pids and ip in disk_percent:
                         os.kill(process_id, 9)
                         del disk_percent[ip]
                         del task_percent[ip]
@@ -59,8 +73,7 @@ def progress(data):
             mat2 = re.search(r'(rTask progress:\s+[0-9]+%|rTask Completed)', line)
             if mat1:
                 try:
-                    ip = \
-                        re.search(regex_search, line).group().split('=')[-1]
+                    ip = re.search(regex_search, line).group().split('=')[-1]
                 except AttributeError:
                     continue
                 if mat1.group() == 'rTransfer Completed':
@@ -92,7 +105,8 @@ def progress(data):
             if disk_start:
                 os.system('clear')
                 if failed_ip:
-                    print("\n\nSome machines won't be deployed due to incorrect ESXi Credentials : \n")
+                    print("\n\nBelow machines won't be deployed due to some errors,  "
+                          "check the summary in the end for more details : \n")
                     for fail in failed_ip:
                         print(fail, "\n")
                 print(f"Deploying {n} VMNs")
