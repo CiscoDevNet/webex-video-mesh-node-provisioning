@@ -26,7 +26,7 @@ The script uses the ovftool API to manage machines on the ESXi, in such a way th
         *	For Linux, follow this procedure:  
             * Unzip the OVF Tool
             * Add the following line to your .bashrc file:   
-                `export PATH=$PATH:\<downloaded path>/ovftool`
+                `export PATH=$PATH:<downloaded path>/ovftool`
             * Run the .bashrc file:
                 > source .bashrc  
             * Run the following command:
