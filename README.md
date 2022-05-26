@@ -70,7 +70,7 @@ If there is invalid input in the input_data.csv, like Blank/Invalid IP, DNS, NTP
 
 <br />
 
-### **<u>Error during/after deployment</u>**
+### **<u>Errors during/after deployment</u>**
 
 When there are other issues that can come up while the deployment of VMN is going on, like incorrect ESXi credentials (username or password), or lack of resources on the ESXi server, then the following format of output is displayed. The nodes with incorrect credentials, or wrong datastore details, are displayed first and those nodes are not included in the progress indicator at all. The nodes which cannot be deployed due to lack of resources on the ESXi, will only show 0% in the Configuration Progress indicator. The appropriate messages will be displayed in the end, stating which nodes were deployed, and which could not be deployed (along with the reason for failure).
 
