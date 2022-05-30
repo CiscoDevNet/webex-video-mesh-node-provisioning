@@ -6,6 +6,7 @@ import json
 from driver_guest_info import worker
 from deployment_progress import progress
 from os import path
+import subprocess
 
 
 def validation_check():
@@ -13,8 +14,8 @@ def validation_check():
         config_details = json.load(fh)
 
     ovf_filename = config_details['ovf_filename']
-    # regex = r"^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
-    regex = r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"
+    regex = r"^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
+    # regex = r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}"
     hostname_regex = r"(?!-)[A-Z\d-]{1,63}(?<!-)$"
     csv_file = open("input_data.csv")
     csv_reader = csv.reader(csv_file)
@@ -30,24 +31,21 @@ def validation_check():
 
     for i, row in enumerate(csv_reader):
         error = []
-        if not re.search(regex, row[0]):
+        if not re.match(regex, row[0]):
             error.append("ESXi Host IP")
             flag = True
-        if not re.search(regex, row[5]):
+        if not re.match(regex, row[5]):
             error.append("Invalid/blank IP")
             flag = True
-        if not re.search(regex, row[6]):
+        if not re.match(regex, row[6]):
             error.append("Netmask")
             flag = True
-        if not re.search(regex, row[7]):
+        if not re.match(regex, row[7]):
             error.append("Gateway")
             flag = True
-        if not re.search(regex, row[8]):
+        if not re.match(regex, row[8]):
             error.append("DNS")
             flag = True
-        # if not re.search(regex,row[9]):
-        #    error.append("NTP")
-        #    flag = True
         if not (row[13] == "VMNLite" or row[13] == "CMS1000"):
             error.append("Deployment Type")
             flag = True
@@ -69,6 +67,16 @@ def validation_check():
             error.append("Duplicate IP")
             flag = True
         ips.append(row[5])
+
+        # NTP server validation
+        if not re.match(regex, row[9]):
+            process = subprocess.Popen(['nslookup', row[9]], stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+            stdout, stderr = process.communicate()
+            ret_code = process.returncode
+            if ret_code:
+                error.append("NTP")
+                flag = True
 
         if flag:
             not_deployed[i + 1] = error
