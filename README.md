@@ -30,9 +30,7 @@ NOTE: The script supports deployment of VMNs only on standalone ESXi Hosts at th
             * Add the following line to your .bashrc file:   
                 `export PATH=$PATH:<downloaded path>/ovftool`
             * Run the .bashrc file:
-                > source .bashrc  
-            * Run the following command:
-                > chmod +x ovftool; sync; ovftool --eulas-agreed --console –required
+                > source ~/.bashrc
         *	For MacOS, follow this procedure:  
             * Install the ovftool through the usual application installation.  
             * Move all the files present in `Applications/VMWare OVF Tool` to the venv’s `bin` directory.  
