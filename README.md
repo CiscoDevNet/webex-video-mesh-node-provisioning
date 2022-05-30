@@ -9,6 +9,8 @@ The script will help customer admin to run automatic deployment of Video Mesh No
 
 The script uses the ovftool API to manage machines on the ESXi, in such a way that VMNs are brought up by multiprocessing. It enables the administrator to assign network parameters (IP, netmask, Gateway, DNS, NTP, Hostname) to the VMN as part of running the script.
 
+NOTE: The script supports deployment of VMNs only on standalone ESXi Hosts at the moment. It does not support deployment on ESXi which are managed by vCenter Servers.
+
 
 <br />
 
