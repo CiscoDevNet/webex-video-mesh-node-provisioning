@@ -12,6 +12,8 @@ The script uses the ovftool API to manage machines on the ESXi, in such a way th
 NOTE: The script supports deployment of VMNs only on standalone ESXi Hosts at the moment. It does not support deployment on ESXi which are managed by vCenter Servers.
 
 **Versioning information**
+
+
 Please refer to the wiki: https://github.com/CiscoDevNet/webex-video-mesh-node-provisioning/wiki
 
 <br />
