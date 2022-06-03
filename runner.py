@@ -1,15 +1,20 @@
 import csv
 import time
-import multiprocessing as mp
 import re
 import json
+import subprocess
+import multiprocessing as mp
+from os import path
+from time import sleep
 from driver_guest_info import worker
 from deployment_progress import progress
-from os import path
-import subprocess
+from host_validation import host_validation
 
 
 def validation_check():
+    print("\nPerforming validations on the input file.....")
+    host_validation()
+
     with open('config.json', 'r') as fh:
         config_details = json.load(fh)
 
@@ -24,11 +29,10 @@ def validation_check():
     ips = list()
     not_deployed = {}
     flag = False
-
+    print("Checking for invalid input in other fields\n")
     if not path.exists(ovf_filename):
-        print(f'OVF file {ovf_filename} does not exist in the current directory. Please place it and re-run.\n')
+        print(f'OVF file "{ovf_filename}" does not exist in the current directory. Please place it and re-run.\n')
         flag = True
-
     for i, row in enumerate(csv_reader):
         error = []
         if not re.match(regex, row[0]):
@@ -83,9 +87,12 @@ def validation_check():
 
     csv_file.close()
     if flag:
-        print("\n\nRow number(s) with incorrect/invalid input format: ")
-        print(json.dumps(not_deployed, indent=6))
-        print("\n\nPlease validate and re-run the script by correcting it/them.")
+        print("\nRow number(s) in csv with incorrect/invalid input format: \n")
+        # print(json.dumps(not_deployed, indent=6))
+        for i in not_deployed:
+            if not_deployed[i]:
+                print(i, ":", not_deployed[i], "\n")
+        print("\n\nPlease validate and re-run the script after correcting them.")
         print("Exiting...\n\n")
         exit()
 
