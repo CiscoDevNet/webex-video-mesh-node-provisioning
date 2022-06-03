@@ -61,6 +61,7 @@ def progress(data):
                         del disk_flag[ip]
                         del task_flag[ip]
                         n -= 1
+                        time_taken_count -= 1
                         progress.append(f"{ip} could not be deployed due to Wrong Internal/External Network Name.")
                 except AttributeError:
                     continue
