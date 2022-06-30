@@ -117,3 +117,32 @@ When the script completes running, there are two types of log files generated. O
 <br />
 <br />
 
+## <a id="password"></a> **Changing the Admin Account Password of Nodes in Bulk**
+
+<br />
+
+Once you deploy the nodes, the Admin account password of the nodes need to be changed, before proceeding to use the node.
+
+This script allows you to change the admin user's password in bulk. You can use this script to change the admin password immediately after the VMN deployment or at any other point.
+
+Edit the `input_password.csv` file to include details of the nodes for which to change the admin account password  (IP, Old Password, New Password).
+
+Leave the Old Password field blank if you’re changing the password for that node for the first time ever (recently deployed nodes).
+
+<br />
+
+### **Sample csv:**
+
+| node\_ip | old\_password | new\_password |
+| -------- | ------------- | ------------- |
+| 1.1.1.1  |               | newpass       |
+| 2.2.2.2  | oldpass       | newpass       |
+
+<br />
+
+* node_ip - The IP of the Video Mesh Node for which to change the admin password
+* old_password - The old password of the node (leave blank if first time set-up)
+* new_password - The new password of the node
+
+<br />
+
