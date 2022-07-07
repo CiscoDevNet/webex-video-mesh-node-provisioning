@@ -28,8 +28,13 @@ def progress(data):
     killed_pids = set()
     failed_ip = set()
     progress = []
+
+    failed_ips = list()
+    passed_ips = list()
+
     # regex_search = r"ipaddress=^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
     regex_search = r'ipaddress=[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
+    ip = ''
     while True:
         if time_taken_count == n or (disk_count == n and task_count == n):
             break
@@ -46,6 +51,7 @@ def progress(data):
                         n -= 1
                         time_taken_count -= 1
                         progress.append(f"{ip} could not be deployed due to Wrong Datastore Name.")
+                        failed_ips.append(ip)
                 except AttributeError:
                     continue
                 else:
@@ -63,6 +69,61 @@ def progress(data):
                         n -= 1
                         time_taken_count -= 1
                         progress.append(f"{ip} could not be deployed due to Wrong Internal/External Network Name.")
+                        failed_ips.append(ip)
+                except AttributeError:
+                    continue
+                else:
+                    failed_ip.add(ip)
+            if re.search(r"Error: Target datastore", line):
+                try:
+                    ip = re.search(regex_search, line).group().split('=')[-1]
+                    if ip in disk_percent:
+                        del disk_percent[ip]
+                        del task_percent[ip]
+                        del disk_flag[ip]
+                        del task_flag[ip]
+                        n -= 1
+                        time_taken_count -= 1
+                        progress.append(
+                            f"{ip} could not be deployed because datastore is not accessible or the ESXi is down")
+                        failed_ips.append(ip)
+                except AttributeError:
+                    continue
+                else:
+                    failed_ip.add(ip)
+
+            if re.search(r"Error: Task failed on server: An error occurred while communicating with the remote host",
+                         line):
+                try:
+                    ip = re.search(regex_search, line).group().split('=')[-1]
+                    if ip in disk_percent:
+                        del disk_percent[ip]
+                        del task_percent[ip]
+                        del disk_flag[ip]
+                        del task_flag[ip]
+                        n -= 1
+                        time_taken_count -= 1
+                        progress.append(f"{ip} could not be deployed - unable to communicate to ESXi")
+                        failed_ips.append(ip)
+                except AttributeError:
+                    continue
+                else:
+                    failed_ip.add(ip)
+
+            # If the ESXi communication stops during VMN deployment
+            if re.search(r"Error: Operation was canceled", line):
+                try:
+                    # ip = re.search(regex_search, line).group().split('=')[-1]
+                    if ip in disk_percent:
+                        del disk_percent[ip]
+                        del task_percent[ip]
+                        del disk_flag[ip]
+                        del task_flag[ip]
+                        n -= 1
+                        time_taken_count -= 1
+                        esxi = line.split('/')[-1]
+                        progress.append(f"{ip} could not be deployed - unable to communicate to ESXi")
+                        failed_ips.append(ip)
                 except AttributeError:
                     continue
                 else:
@@ -80,6 +141,7 @@ def progress(data):
                         del task_flag[ip]
                         n -= 1
                         progress.append(f"{ip} could not be deployed due to Wrong ESXi Credentials.")
+                        failed_ips.append(ip)
                 except AttributeError:
                     continue
                 else:
@@ -104,7 +166,8 @@ def progress(data):
             elif mat2:
                 try:
                     ip = \
-                        re.search(r'ipaddress=[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}', line).group().split('=')[
+                        re.search(r'ipaddress[_]*[1]*=[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}',
+                                  line).group().split('=')[
                             -1]
                 except AttributeError:
                     continue
@@ -135,10 +198,15 @@ def progress(data):
 
     fh.close()
     print('\n\nFinishing up, hold on. This might just take a few minutes...\n\n')
+
     for i in task_percent:
         if task_percent[i] != "100%":
             progress.append(f"{i} could not be deployed due to lack of resources in the ESXi server.")
+            failed_ips.append(i)
         else:
             progress.append(f"{i} was successfully deployed.")
+            passed_ips.append(i)
     for i in progress:
         print(i, "\n")
+
+    return passed_ips, failed_ips

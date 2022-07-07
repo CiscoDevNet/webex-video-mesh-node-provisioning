@@ -21,8 +21,7 @@ Please refer to the wiki: https://github.com/CiscoDevNet/webex-video-mesh-node-p
 ## **Pre-requisites**  
 * OVA File - The Video Mesh OVA file that helps in deployment of VMN. Place this file in the same directory as the script.
 * config.json - This file contains the common configurations such as ovf_filename (path), and the internal and external network settings.
-* input_data.csv - This CSV file takes the ESXi server IP and Credentials, Datastore, VM Name, Network configs (IP, netmask, Gateway, 1 DNS [only IP format], 1 NTP [also takes FQDN as input], Hostname [or FQDN]), and the Deployment Type ('VMNLite' or 'CMS1000') as input. Edit this csv file to include all details of nodes to be deployed.
-
+* input_data.csv - This CSV file takes the details of the ESXi and the VMN to be deployed as input. Edit this csv file to include all details of nodes to be deployed. Refer to the sample csv attached below for more details.
 
 * Ovftool is the API used to deploy and manage Machines on ESXi servers. This needs to be installed. 
     1.	Download the ovftool for Linux or MacOS -> (https://developer.vmware.com/web/tool/4.4.0/ovf)
@@ -49,9 +48,26 @@ Please refer to the wiki: https://github.com/CiscoDevNet/webex-video-mesh-node-p
 
 | esxi\_host   | username | password | datastore\_name        | name      | ip          | mask          | gateway    | dns            | ntp         | hostname | esxi\_internal\_nw | esxi\_external\_nw | deployment\_option |
 | ------------ | -------- | -------- | ---------------------- | --------- | ----------- | ------------- | ---------- | -------------- | ----------- | -------- | ------------------ | ------------------ | ------------------ |
-| 1.1.1.1 | user     | passwd   | datastore1 | test\_vm3 | 3.3.3.3 | 5.5.5.5 | 6.6.6.6 |     7.7.7.7 | 8.8.8.8 | user1    | VM Network         | VM Network         | CMS1000            |
-| 2.2.2.2 | user     | passwd   | datastore2 | test\_vm4 | 4.4.4.4 | 5.5.5.5 | 6.6.6.6 |      7.7.7.7 | 8.8.8.8 | user2    | VM Network         | VM Network         | VMNLite            |
+| 1.1.1.1 | user     | passwd   | datastore1 | test\_vm3 | 3.3.3.3 | 5.5.5.5 | 6.6.6.6 |     7.7.7.7\|7\.7.7.8\|7.7.7.9 | 8.8.8.8 | user1    | VM Network         | VM Network         | CMS1000            |
+| 2.2.2.2 | user     | passwd   | datastore2 | test\_vm4 | 4.4.4.4 | 5.5.5.5 | 6.6.6.6 |      7.7.7.7 | 8.8.8.8\|8.8.8.9 | user2.domain.com    | VM Network         | VM Network         | VMNLite            |
 
+<br />
+
+* esxi_host - ESXi Host IP
+* username - ESXi Host Username
+* password - ESXi Host Password
+* datastore_name - Datastore name on which to deploy the VMN (can be found on the ESXi server under 'Storage')
+* name- VM Name
+* ip - Static IP address of the VM
+* mask - Netmask
+* gateway - Gateway
+* dns - One or more DNS servers. You can include multiple DNS servers in a pipe-delimited ( | ) list. Only IP format is accepted.
+* ntp - One or more NTP servers. You can include multiple NTP servers in a pipe-delimited ( | ) list. Also takes FQDN as input.
+* hostname - Host name of the VM. You can include the domain as hostname.domain.com
+* esxi_internal_nw - ESXI Internal Network (can be found on the ESXi server under 'Networking')
+* esxi_external_nw - ESXI External Network (can be found on the ESXi server under 'Networking')
+* deployment_option - Deployment Type ('VMNLite' or 'CMS1000') 
+* 
 <br />
 
 ## **Running the script to bulk provision VMN**
@@ -112,9 +128,14 @@ When there are other issues that can come up while the deployment of VMN is goin
 
 When the script completes running, there are two types of log files generated. One log file is named as “vmn_provisioning.log” which contains logs of the entire process, and the other type of log file is specific to each VMN deployment, and is named as “ovf_IP.log”, where IP corresponds to the IP address of each VMN. These logs can be investigated upon further failures of the deployment.  
 
+The Password in the csv is masked by ***** for every row whose password change was successful, and by ##### for every row whose password change failed. Enter the password again for the failed rows if the script is re-run. Do not share the original csv file with anyone as it contains password as plaintext.
+
  _Check that all the nodes from the CSV file deployed correctly. If some nodes did not deploy, edit the CSV file to provide the necessary information and run the script again._
 
 <br />
+
+---
+
 <br />
 
 ## <a id="password"></a> **Changing the Admin Account Password of Nodes in Bulk**
@@ -146,3 +167,79 @@ Leave the Old Password field blank if you’re changing the password for that no
 
 <br />
 
+### **Running the script to change Admin Account Password:**
+
+> git clone https://github.com/CiscoDevNet/webex-video-mesh-node-provisioning.git 
+
+> cd webex-video-mesh-node-provisioning
+
+> pip install -r requirements.txt
+
+> Edit the input_password.csv to include details
+
+> python3 change_password.py
+
+<br />
+
+The script displays the nodes for which the password change failed first (with the reason for failure), followed by the nodes for which the password change was successful.  
+
+The Password in the csv is masked by ***** for every row whose password change was successful, and by ##### for every row whose password change failed. Enter the password again for the failed rows if the script is re-run. Do not share the original csv file with anyone as it contains password as plaintext.
+
+Constraints for new password:
+* Cannot be same as previous 3 passwords  
+* 8 - 40 characters accepted  
+* Should be a non-dictionary word  
+* Should contain at least 3 of these character types: uppercase letters, lowercase letters, numbers, and special characters
+
+<br />
+
+## <a id="dual-ip"></a> **External Network Configuration**
+
+<br />
+
+**NOTE: You can only do this configuration for newly deployed Video Mesh Nodes, whose default admin password has changed. Don’t use this script after registering the node to an organisation.**
+
+You can use this script to add the external IP to your Video Mesh nodes.
+
+Edit the `input_external_nw.csv` file to include details of the nodes for which to set up the external network (Node IP, Username, Password, External IP, External Netmask, External Gateway).
+
+<br />
+
+### **Sample csv:**
+
+| node\_ip | username | password | ext\_ip | ext\_mask | ext\_gw |
+| -------- | -------- | -------- | ------- | --------- | ------- |
+| 1.1.1.1  | admin    | passwd   | 1.2.3.4 | 2.3.4.5   | 3.3.3.3 |
+| 2.2.2.2  | admin    | passwd   | 5.6.7.8 | 6.7.8.9   | 4.4.4.4 |
+
+<br />
+
+* node_ip - The IP of the Video Mesh Node to add the External IP details
+* username - The username of the node
+* password - The password of the node
+* ext_ip - The External IP to add
+* ext_mask - The Netmask for the External Network
+* ext_gw - The Gateway for the External Network
+
+<br />
+
+### **Running the script to enable and edit External Network Configuration:**
+
+> git clone https://github.com/CiscoDevNet/webex-video-mesh-node-provisioning.git 
+
+> cd webex-video-mesh-node-provisioning
+
+> pip install -r requirements.txt
+
+> Edit the input_external_nw.csv to include details
+
+> python3 external_network.py
+
+<br />
+
+The script displays the summary of the external network configuration (whether successful or failed) after running.
+
+The Password in the csv is masked by ***** for every row whose external network change is successful, and by ##### for every row whose external network change failed. Enter the password again for the failed rows if the script is re-run. Do not share the original csv file with anyone as it contains password as plaintext.
+
+
+<br />

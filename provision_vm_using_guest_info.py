@@ -1,5 +1,6 @@
 import logging
 import time
+from log_format import LoggingFormatter
 
 logging.basicConfig(filename='vmn_provisioning.log',
                     filemode='w',
@@ -25,6 +26,8 @@ except ImportError:
 def deploy_ovf_with_guestinfo(esxi_host, username, password, ovf_filename, name, datastore_name, ip, mask, gateway, dns,
                               ntp, hostname, deployment_option, vm_internal_nw, esxi_internal_nw, vm_external_nw,
                               esxi_external_nw, dual_ip_deployment, log_file, skip_manifest_check='false'):
+    for h in logging.root.handlers:
+        h.setFormatter(LoggingFormatter(h.formatter, patterns=[password]))
     try:
         logging.info("Creating VM on ESXi host {} from ova file {}".format(esxi_host, ovf_filename))
         s = time.time()
