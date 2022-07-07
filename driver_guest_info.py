@@ -11,8 +11,8 @@ def worker(*data):
     ip = data[5]
     mask = data[6]
     gateway = data[7]
-    dns = data[8]
-    ntp = data[9]
+    dns = data[8].replace('|', ',')
+    ntp = data[9].replace('|', ',')
     hostname = data[10]
     esxi_internal_nw = data[11]
     esxi_external_nw = data[12]
