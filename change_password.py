@@ -4,6 +4,7 @@ import json
 import re
 from multiprocessing.pool import ThreadPool
 import warnings
+import subprocess
 from utils import mask_passwords
 
 warnings.filterwarnings("ignore")
@@ -23,9 +24,14 @@ def worker(*data, row=None):
         old_password = "cisco"
     password = data[2]
     if not re.match(regex, ip):
-        errors.append(f"{ip} - IP does not correspond to a valid VMN.")
-        failed_rows.append(row)
-        return
+        process = subprocess.Popen(['nslookup', ip], stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        ret_code = process.returncode
+        if ret_code:
+            errors.append(f"{ip} - IP does not correspond to a valid VMN.")
+            failed_rows.append(row)
+            return
     url = "https://" + ip + "/api/v1/auth/users/password"
     referer = "https://" + ip + "/setup/"
     headers = {"Referer": referer, "Content-Type": "application/json", "Accept": "*/*"}
