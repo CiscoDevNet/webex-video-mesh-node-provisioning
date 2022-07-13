@@ -154,11 +154,11 @@ Leave the Old Password field blank if you’re changing the password for that no
 
 ### **Sample csv:**
 
-| node\_ip       | old\_password | new\_password |
-|----------------| ------------- | ------------- |
-| 1.1.1.1        |               | newpass       |
-| hosname.domain |               | newpass       |
-| 2.2.2.2        | oldpass       | newpass       |
+| video\_mesh\_node | old\_password | new\_password |
+|-------------------| ------------- | ------------- |
+| 1.1.1.1           |               | newpass       |
+| hosname.domain    |               | newpass       |
+| 2.2.2.2           | oldpass       | newpass       |
 
 <br />
 
