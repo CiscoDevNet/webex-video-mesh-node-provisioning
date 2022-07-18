@@ -1,9 +1,11 @@
 import json
 import provision_vm_using_guest_info
+import provision_vm_vcenter
+from get_esxi_path_on_vcenter import get_esxi_path
 
 
-def worker(*data):
-    esxi_host = data[0]
+def worker(*data, method='standalone'):
+    host = data[0]
     username = data[1]
     password = data[2]
     datastore_name = data[3]
@@ -33,12 +35,26 @@ def worker(*data):
         dual_ip_deployment = True
 
     try:
-        res = provision_vm_using_guest_info.deploy_ovf_with_guestinfo(esxi_host, username, password, ovf_filename, name,
-                                                                      datastore_name, ip, mask, gateway, dns, ntp,
-                                                                      hostname, deployment_option, vm_internal_nw,
-                                                                      esxi_internal_nw, vm_external_nw,
-                                                                      esxi_external_nw, dual_ip_deployment, log_file,
-                                                                      'true')
+        if method == 'vcenter':
+            esxi_host = data[14]
+            esxi_path = get_esxi_path(host, username, password, esxi_host)
+            if esxi_path:
+                res = provision_vm_vcenter.deploy_ovf_via_vcenter(host, username, password, esxi_host, esxi_path,
+                                                                  ovf_filename, name, datastore_name, ip, mask, gateway,
+                                                                  dns, ntp, hostname, deployment_option, vm_internal_nw,
+                                                                  esxi_internal_nw, vm_external_nw, esxi_external_nw,
+                                                                  dual_ip_deployment, log_file, 'true')
+            else:
+                print(f'{ip} could not be deployed - could not find ESXi {esxi_host} on vCenter {host}')
+                return False
+        else:
+            res = provision_vm_using_guest_info.deploy_ovf_with_guestinfo(host, username, password, ovf_filename, name,
+                                                                          datastore_name, ip, mask, gateway, dns, ntp,
+                                                                          hostname, deployment_option, vm_internal_nw,
+                                                                          esxi_internal_nw, vm_external_nw,
+                                                                          esxi_external_nw, dual_ip_deployment,
+                                                                          log_file,
+                                                                          'true')
     except Exception as err:
         return f"Some error occurred: {err}", f"Check {log_file} for more details"
     else:

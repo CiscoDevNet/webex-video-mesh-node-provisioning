@@ -1,0 +1,1 @@
+vcenter,username,password,datastore_name,name,ip,mask,gateway,dns,ntp,hostname,esxi_internal_nw,esxi_external_nw,deployment_option,esxi
