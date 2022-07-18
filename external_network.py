@@ -1,11 +1,12 @@
 import re
 import requests
-from requests.auth import HTTPBasicAuth
-import json
-from urllib.parse import unquote
-import csv
-from multiprocessing.pool import ThreadPool
 import warnings
+import subprocess
+import csv
+import json
+from requests.auth import HTTPBasicAuth
+from urllib.parse import unquote
+from multiprocessing.pool import ThreadPool
 from utils import get_rows, mask_passwords
 
 warnings.filterwarnings("ignore")
@@ -29,9 +30,14 @@ def worker(*data):
     output[ip]["status"] = "PASS"
 
     if not re.match(regex, ip):
-        output[ip]["failure"].append("Invalid IP")
-        output[ip]["status"] = "FAIL"
-        return
+        process = subprocess.Popen(['nslookup', ip], stdout=subprocess.PIPE,
+                                       stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        ret_code = process.returncode
+        if ret_code:
+            output[ip]["failure"].append("Invalid Video Mesh Node FQDN")
+            output[ip]["status"] = "FAIL"
+            return
 
     session = requests.Session()
 

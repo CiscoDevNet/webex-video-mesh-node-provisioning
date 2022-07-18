@@ -23,37 +23,38 @@ except ImportError:
     raise
 
 
-def deploy_ovf_with_guestinfo(esxi_host, username, password, ovf_filename, name, datastore_name, ip, mask, gateway, dns,
-                              ntp, hostname, deployment_option, vm_internal_nw, esxi_internal_nw, vm_external_nw,
-                              esxi_external_nw, dual_ip_deployment, log_file, skip_manifest_check='false'):
+def deploy_ovf_via_vcenter(vcenter_server, vcenter_user, vcenter_pass, esxi_host, esxi_path, ovf_filename, name,
+                           datastore_name, ip, mask, gateway, dns, ntp, hostname, deployment_option, vm_internal_nw,
+                           esxi_internal_nw, vm_external_nw, esxi_external_nw, dual_ip_deployment, log_file,
+                           skip_manifest_check='false'):
     for h in logging.root.handlers:
-        h.setFormatter(LoggingFormatter(h.formatter, patterns=[password]))
+        h.setFormatter(LoggingFormatter(h.formatter, patterns=[vcenter_pass]))
     try:
-        logging.info("Creating VM on ESXi host {} from ova file {}".format(esxi_host, ovf_filename))
+        logging.info(f"Creating VM on ESXi host {esxi_host} from ova file {ovf_filename} on vCenter {vcenter_server}")
         s = time.time()
-        logging.info("ESXi host {} local ova file {}: ".format(esxi_host, ovf_filename))
-        vm_name = "--name={}".format(name)
-        mf_check = "--skipManifestCheck=" + skip_manifest_check
-        no_verify = "--noSSLVerify"
-        datastore = "--datastore={}".format(datastore_name)
-        power_on = "--powerOn=True"
-        vm_net1 = "--net:{}={}".format(vm_internal_nw, esxi_internal_nw)
-        vm_net2 = "--net:{}={}".format(vm_external_nw, esxi_external_nw)
-        wait_ip = "--X:waitForIp"
-        overwrite = "--overwrite"
-        poweroff = "--powerOffTarget"
-        guest_opt1 = "--prop:guestinfo.ciscoecp.nw.ipaddress={}".format(ip)
-        guest_opt2 = "--prop:guestinfo.ciscoecp.nw.mask={}".format(mask)
-        guest_opt3 = "--prop:guestinfo.ciscoecp.nw.gateway={}".format(gateway)
-        guest_opt4 = "--prop:guestinfo.ciscoecp.nw.hostname={}".format(hostname)
-        guest_opt5 = "--prop:guestinfo.ciscoecp.nw.dns={}".format(dns)
-        guest_opt6 = "--prop:guestinfo.ciscoecp.nw.ntp={}".format(ntp)
-        inject_ovfenv_opt = "--X:injectOvfEnv"
-        logfile_opt = "--X:logFile={}".format(log_file)
-        loglevel_opt = "--X:logLevel=verbose"
-        deployment_opt = "--deploymentOption={}".format(deployment_option)
+        logging.info(f"ESXi host {esxi_host} local ova file {ovf_filename}: ")
+        vm_name = f"--name={name}"
+        mf_check = f"--skipManifestCheck={skip_manifest_check}"
+        no_verify = f"--noSSLVerify"
+        datastore = f"--datastore={datastore_name}"
+        power_on = f"--powerOn=True"
+        vm_net1 = f"--net:{vm_internal_nw}={esxi_internal_nw}"
+        vm_net2 = f"--net:{vm_external_nw}={esxi_external_nw}"
+        wait_ip = f"--X:waitForIp"
+        overwrite = f"--overwrite"
+        poweroff = f"--powerOffTarget"
+        guest_opt1 = f"--prop:guestinfo.ciscoecp.nw.ipaddress={ip}"
+        guest_opt2 = f"--prop:guestinfo.ciscoecp.nw.mask={mask}"
+        guest_opt3 = f"--prop:guestinfo.ciscoecp.nw.gateway={gateway}"
+        guest_opt4 = f"--prop:guestinfo.ciscoecp.nw.hostname={hostname}"
+        guest_opt5 = f"--prop:guestinfo.ciscoecp.nw.dns={dns}"
+        guest_opt6 = f"--prop:guestinfo.ciscoecp.nw.ntp={ntp}"
+        inject_ovfenv_opt = f"--X:injectOvfEnv"
+        logfile_opt = f"--X:logFile={log_file}"
+        loglevel_opt = f"--X:logLevel=verbose"
+        deployment_opt = f"--deploymentOption={deployment_option}"
         source = ovf_filename
-        dest = "vi://{}:{}@{}".format(username, password, esxi_host)
+        dest = f"vi://{vcenter_user}:{vcenter_pass}@{vcenter_server}/{esxi_path}"
 
         # we have to set power_on=True when using ovftool launch ova with ignite config,
         # so that config parameters can be saved into vm instance. We can not set power_on=False
@@ -84,7 +85,7 @@ def deploy_ovf_with_guestinfo(esxi_host, username, password, ovf_filename, name,
         time.sleep(60)
         return True
     except BaseException:
-        logging.exception("exception in deploy_ovf_with_guestinfo")
+        logging.exception("exception in deploy_ovf_via_vcenter")
         return False
     finally:
         e = time.time()

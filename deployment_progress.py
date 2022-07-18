@@ -2,13 +2,37 @@ import re
 from time import sleep
 import json
 import os
+import csv
 
 
-def progress(data):
+def get_details(ip_addrs, method):
+    result = {}
+    if method == 'standalone':
+        file_name = "input_data.csv"
+    else:
+        file_name = "input_data_vcenter.csv"
+
+    csv_file = open(file_name)
+    csv_reader = csv.reader(csv_file)
+    cols = next(csv_reader)
+    for r in csv_reader:
+        if r[5] in ip_addrs:
+            if method == 'standalone':
+                result[r[5]] = {'esxi': r[0]}
+            else:
+                result[r[5]] = {'vcenter': r[0], 'esxi': r[14]}
+
+    csv_file.close()
+
+    return result
+
+
+def progress(data, method):
     file_name = 'vmn_provisioning.log'
     fh = open(file_name, 'r')
     disk_flag = {}
     task_flag = {}
+    time_taken_flag = {}
     disk_percent = {}
     task_percent = {}
     disk_start = 0
@@ -16,6 +40,7 @@ def progress(data):
     for i in data:
         disk_flag[i] = False
         task_flag[i] = False
+        time_taken_flag[i] = {'status': False, 'counted': False}
         disk_percent[i] = '0%'
         task_percent[i] = '0%'
 
@@ -35,7 +60,13 @@ def progress(data):
     # regex_search = r"ipaddress=^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
     regex_search = r'ipaddress=[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}'
     ip = ''
+    new_ip = ''
     while True:
+        for j in time_taken_flag:
+            if time_taken_flag[j]['status'] and not time_taken_flag[j]['counted']:
+                time_taken_count += 1
+                time_taken_flag[j]['counted'] = True
+
         if time_taken_count == n or (disk_count == n and task_count == n):
             break
         line = fh.readline()
@@ -48,32 +79,95 @@ def progress(data):
                         del task_percent[ip]
                         del disk_flag[ip]
                         del task_flag[ip]
+                        del time_taken_flag[ip]
                         n -= 1
-                        time_taken_count -= 1
                         progress.append(f"{ip} could not be deployed due to Wrong Datastore Name.")
                         failed_ips.append(ip)
                 except AttributeError:
                     continue
                 else:
                     failed_ip.add(ip)
+
             if re.search(r"TIME TAKEN", line):
-                time_taken_count += 1
+                time_taken_flag[ip]['status'] = True
+
             if re.search(r"Error: Invalid target name", line):
                 try:
-                    ip = re.search(regex_search, line).group().split('=')[-1]
+                    # ip = re.search(regex_search, line).group().split('=')[-1]
                     if ip in disk_percent:
                         del disk_percent[ip]
                         del task_percent[ip]
                         del disk_flag[ip]
                         del task_flag[ip]
+                        del time_taken_flag[ip]
                         n -= 1
-                        time_taken_count -= 1
                         progress.append(f"{ip} could not be deployed due to Wrong Internal/External Network Name.")
                         failed_ips.append(ip)
                 except AttributeError:
                     continue
                 else:
                     failed_ip.add(ip)
+
+            if line:
+                if re.search(r"Error: Fault cause", line):
+                    try:
+                        ip = re.search(regex_search, line).group().split('=')[-1]
+                        if ip in disk_percent:
+                            del disk_percent[ip]
+                            del task_percent[ip]
+                            del disk_flag[ip]
+                            del task_flag[ip]
+                            del time_taken_flag[ip]
+                            n -= 1
+                            progress.append(f"{ip} - could not be deployed due Datastore fault.")
+                            failed_ips.append(ip)
+                    except AttributeError:
+                        continue
+                    else:
+                        failed_ip.add(ip)
+
+            new_ip = re.search(regex_search, line)
+            if new_ip:
+                new_ip = new_ip.group().split('=')[-1]
+                ip = new_ip
+            if re.search(r"Error: No datastores found on target", line):
+                try:
+                    # ip = re.search(regex_search, line).group().split('=')[-1]
+                    if ip in disk_percent:
+                        del disk_percent[ip]
+                        del task_percent[ip]
+                        del disk_flag[ip]
+                        del task_flag[ip]
+                        del time_taken_flag[ip]
+                        n -= 1
+                        progress.append(f"{ip} could not be deployed because no datastore found on the target")
+                        failed_ips.append(ip)
+                except AttributeError:
+                    continue
+                else:
+                    failed_ip.add(ip)
+
+            new_ip = re.search(regex_search, line)
+            if new_ip:
+                new_ip = new_ip.group().split('=')[-1]
+                ip = new_ip
+            if re.search(r"Access to resource settings on the host is restricted to the server that is managing it", line):
+                try:
+                    # ip = re.search(regex_search, line).group().split('=')[-1]
+                    if ip in disk_percent:
+                        del disk_percent[ip]
+                        del task_percent[ip]
+                        del disk_flag[ip]
+                        del task_flag[ip]
+                        del time_taken_flag[ip]
+                        n -= 1
+                        progress.append(f"{ip} {line}")
+                        failed_ips.append(ip)
+                except AttributeError:
+                    continue
+                else:
+                    failed_ip.add(ip)
+
             if re.search(r"Error: Target datastore", line):
                 try:
                     ip = re.search(regex_search, line).group().split('=')[-1]
@@ -82,10 +176,29 @@ def progress(data):
                         del task_percent[ip]
                         del disk_flag[ip]
                         del task_flag[ip]
+                        del time_taken_flag[ip]
                         n -= 1
-                        time_taken_count -= 1
                         progress.append(
                             f"{ip} could not be deployed because datastore is not accessible or the ESXi is down")
+                        failed_ips.append(ip)
+                except AttributeError:
+                    continue
+                else:
+                    failed_ip.add(ip)
+
+            if re.search(r"Error: Task failed on server", line):
+                try:
+                    ip = re.search(regex_search, line).group().split('=')[-1]
+                    if ip in disk_percent:
+                        del disk_percent[ip]
+                        del task_percent[ip]
+                        del disk_flag[ip]
+                        del task_flag[ip]
+                        del time_taken_flag[ip]
+                        n -= 1
+                        disk_count -= 1
+                        progress.append(
+                            f"{ip} could not be deployed due to lack of resources in the ESXi server")
                         failed_ips.append(ip)
                 except AttributeError:
                     continue
@@ -101,8 +214,8 @@ def progress(data):
                         del task_percent[ip]
                         del disk_flag[ip]
                         del task_flag[ip]
+                        del time_taken_flag[ip]
                         n -= 1
-                        time_taken_count -= 1
                         progress.append(f"{ip} could not be deployed - unable to communicate to ESXi")
                         failed_ips.append(ip)
                 except AttributeError:
@@ -110,6 +223,29 @@ def progress(data):
                 else:
                     failed_ip.add(ip)
 
+            # Checking for error when ESXi could not be found on vCenter
+            new_ip = re.search(regex_search, line)
+            if new_ip:
+                new_ip = new_ip.group().split('=')[-1]
+                ip = new_ip
+            if re.search(r"Locator does not refer to an object", line):
+                try:
+                    # ip = re.search(regex_search, line).group().split('=')[-1]
+                    if ip in disk_percent:
+                        del disk_percent[ip]
+                        del task_percent[ip]
+                        del disk_flag[ip]
+                        del task_flag[ip]
+                        del time_taken_flag[ip]
+                        n -= 1
+                        esxi = line.split('/')[-1]
+                        progress.append(
+                            f"{ip} could not be deployed because ESXI {esxi} could not found on the vCenter")
+                        failed_ips.append(ip)
+                except AttributeError:
+                    continue
+                else:
+                    failed_ip.add(ip)
             # If the ESXi communication stops during VMN deployment
             if re.search(r"Error: Operation was canceled", line):
                 try:
@@ -119,10 +255,10 @@ def progress(data):
                         del task_percent[ip]
                         del disk_flag[ip]
                         del task_flag[ip]
+                        del time_taken_flag[ip]
                         n -= 1
-                        time_taken_count -= 1
                         esxi = line.split('/')[-1]
-                        progress.append(f"{ip} could not be deployed - unable to communicate to ESXi")
+                        progress.append(f"{ip} could not be deployed - unable to communicate to ESXi {esxi}")
                         failed_ips.append(ip)
                 except AttributeError:
                     continue
@@ -139,9 +275,14 @@ def progress(data):
                         del task_percent[ip]
                         del disk_flag[ip]
                         del task_flag[ip]
+                        del time_taken_flag[ip]
                         n -= 1
-                        progress.append(f"{ip} could not be deployed due to Wrong ESXi Credentials.")
+                        if method == 'standalone':
+                            progress.append(f"{ip} could not be deployed due to Wrong ESXi Credentials.")
+                        else:
+                            progress.append(f"{ip} could not be deployed due to Wrong vCenter Credentials.")
                         failed_ips.append(ip)
+
                 except AttributeError:
                     continue
                 else:
@@ -187,14 +328,22 @@ def progress(data):
                 if failed_ip:
                     print(
                         "\n\nSome machines won't be deployed due to some errors, check the summary in the end for more details : \n")
-                    for fail in failed_ip:
-                        print(fail, "\n")
-                print(f"Deploying {n} VMNs")
-                print("\nInstallation progress : ")
-                print(json.dumps(disk_percent, indent=6), end='\n')
+                    failed_ip_details = get_details(failed_ip, method)
+                    for fail in failed_ip_details:
+                        if 'vcenter' in failed_ip_details[fail]:
+                            print(
+                                f"VMN IP: {fail}, vCenter: {failed_ip_details[fail]['vcenter']}, ESXi: {failed_ip_details[fail]['esxi']}\n")
+                        else:
+                            print(f"VMN IP: {fail}, ESXi: {failed_ip_details[fail]['esxi']}\n")
+
+                if disk_percent:
+                    print(f"Deploying {n} VMNs")
+                    print("\nInstallation progress : ")
+                    print(json.dumps(disk_percent, indent=6), end='\n')
             if task_start:
-                print("\n\nConfiguration progress : ")
-                print(json.dumps(task_percent, indent=6), end='\n')
+                if task_percent:
+                    print("\n\nConfiguration progress : ")
+                    print(json.dumps(task_percent, indent=6), end='\n')
 
     fh.close()
     print('\n\nFinishing up, hold on. This might just take a few minutes...\n\n')
