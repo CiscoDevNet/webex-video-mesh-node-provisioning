@@ -5,7 +5,8 @@
 * [Bulk Provisioning of Video Mesh Nodes](#bulk-provisioning)
 * [Changing the Admin Account Password of Nodes in Bulk](#password)
 * [External Network Configuration](#dual-ip)
-
+* [Maintenance Mode](#maintenance-mode)
+* [Network Changes (Day 2 Support)](#network)
 
 <br />
 
@@ -100,9 +101,9 @@ Please refer to the wiki: https://github.com/CiscoDevNet/webex-video-mesh-node-p
 <br />
 
 | vcenter | username | password | datastore\_name | name      | ip      | mask    | gateway | dns                     | ntp             | hostname         | esxi\_internal\_nw | esxi\_external\_nw | deployment\_option | esxi             |
-|---------| -------- | -------- | --------------- | --------- | ------- | ------- | ------- | ----------------------- | --------------- | ---------------- | ------------------ | ------------------ | ------------------ |------------------|
-| 1.1.1.1 | user     | passwd   | datastore1      | test\_vm3 | 3.3.3.3 | 5.5.5.5 | 6.6.6.6 | 7.7.7.7\|7.7.7.8\|7.7.7.9 | 8.8.8.8         | user1            | VM Network         | VM Network       | CMS1000           | 1.2.3.4 |
-| 2.2.2.2 | user     | passwd   | datastore2      | test\_vm4 | 4.4.4.4 | 5.5.5.5 | 6.6.6.6 | 7.7.7.7                 | 8.8.8.8\|8.8.8.9 | user2.domain.com | VM Network         | VM Network         | VMNLite          | 5.6.7.8 |
+|---------| -------- | -------- | --------------- | --------- | ------- | ------- | ------- | ----------------------- | --------------- | ---------------- |--------------------| ------------------ | ------------------ |------------------|
+| 1.1.1.1 | user     | passwd   | datastore1      | test\_vm3 | 3.3.3.3 | 5.5.5.5 | 6.6.6.6 | 7.7.7.7\|7.7.7.8\|7.7.7.9 | 8.8.8.8            | user1            | VM Network         | VM Network       | CMS1000           | 1.2.3.4 |
+| 2.2.2.2 | user     | passwd   | datastore2      | test\_vm4 | 4.4.4.4 | 5.5.5.5 | 6.6.6.6 | 7.7.7.7                 | 8.8.8.8\|8.8.8.9 | user2.domain.com   | VM Network         | VM Network         | VMNLite          | 5.6.7.8 |
 
 <br />
 
@@ -193,7 +194,7 @@ Leave the Old Password field blank if you’re changing the password for that no
 | video\_mesh\_node | old\_password | new\_password |
 |-------------------| ------------- | ------------- |
 | 1.1.1.1           |               | newpass       |
-| hostname.domain    |               | newpass       |
+| hostname.domain   |               | newpass       |
 | 2.2.2.2           | oldpass       | newpass       |
 
 <br />
@@ -282,6 +283,117 @@ The script displays the summary of the external network configuration (whether s
 
 The Password in the csv is masked by ***** for every row whose external network change is successful, and by ##### for every row whose external network change failed. Enter the password again for the failed rows if the script is re-run. Do not share the original csv file with anyone as it contains password as plaintext.
 
+
+<br />
+
+---
+
+<br />
+
+## <a id="maintenance-mode"></a> **Maintenance Mode**
+
+<br />
+
+**NOTE: Run this script only when there are no active calls.**
+
+Use this script to either enable or disable maintenance mode on a Video Mesh Node. You can change certain settings, such as network configurations, only when the node is in maintenance mode.  When you place a Video Mesh Node into Maintenance Mode, it does a graceful shutdown of calling services (stops accepting new calls and waits up to 2 hours for existing calls to complete).   
+
+Edit the `input_mm.csv` file to include details of the nodes to be put into or remove from maintenance mode.
+
+<br />
+
+### **Sample csv:** 
+
+| video\_mesh\_node | username | password |
+|-------------------| -------- | -------- |
+| 1.1.1.1           | admin    | passwd   |
+| hostname.domain   | admin    | passwd   |
+
+<br />
+
+* video_mesh_node - The IP/FQDN of the Video Mesh Node for which to enable or disable maintenance mode
+* username - The username of the node
+* password - The password of the node
+
+<br />
+
+### **Running the script to enable or disable Maintenance Mode:**
+
+> git clone https://github.com/CiscoDevNet/webex-video-mesh-node-provisioning.git 
+
+> cd webex-video-mesh-node-provisioning
+
+> pip install -r requirements.txt
+
+> Edit the input_mm.csv to include details
+
+> python3 maintenance_mode.py -m [arg]  
+
+(arg is either 'on' or 'off' for enabling or disabling Maintenance Mode respectively)
+
+<br />
+
+After running, the script lists the nodes for which the change succeeded and failed. For the failures, correct the csv file and re-run the script.
+
+The Password in the csv is masked by ***** for every row on which the operation is successful, and by ##### for every row on which it failed. Enter the password again for the failed rows if the script is re-run. Do not share the original csv file with anyone as it contains password as plaintext.
+
+
+<br />
+
+---
+
+<br />
+
+## <a id="network"></a> **Network Changes (Day 2 Support)**
+
+<br />
+
+**NOTE: Place the nodes in maintenance mode before running this script on them.**
+
+You can use this script to make network changes to nodes that are already registered to their clusters and organisations. You can change settings like hostname, domain, DNS servers, NTP servers, DNS Caching, and MTU with this script. 
+
+Edit the `input_network.csv` file to include details of the nodes and the network changes. 
+
+<br />
+
+### **Sample csv:** 
+
+| video\_mesh_\node | username | password | hostname | domain  | dns             | ntp                     | dns\_caching | mtu  |
+|-------------------| -------- | -------- | -------- | ------- | --------------- | ----------------------- | ------------ | ---- |
+| 1.1.1.1           | admin    | passwd   | host1    |         | 3.3.3.3         | 6.6.6.6\|7.7.7.7\|8.8.8.8 | true         |      |
+| hostname.domain   | admin    | passwd   | host2    | abc.com | 4.4.4.4\|5.5.5.5 |                         |              | 1500 |
+
+<br />
+
+* video_mesh_node - The IP/FQDN of the Video Mesh Node for which to change the network settings
+* username - The username of the node
+* password - The password of the node
+* hostname - The new hostname of the node (leave blank if no change required; entering hostname is mandatory when you must change the domain)
+* domain - The new domain for the hostname of the node (leave blank if no change required)
+* dns - The DNS servers to add. You can include multiple DNS servers in a pipe-delimited ( | ) list. (Leave blank if no change is required. When making a change, be sure to list existing servers that you need to keep along with any new server. You can have a maximum of 4 DNS servers.)
+* ntp - The NTP servers to add. You can include multiple NTP servers in a pipe-delimited ( | ) list. (Leave blank if no change is required. When making a change, be sure to list existing servers that you need to keep along with any new server. You can have a maximum of 5 NTP servers.)
+* dns_caching - 'true' or 'false', depending on whether you want to enable or disable the DNS Caching (Leave blank if no change is required)
+* mtu - The new MTU value (Leave blank if no change is required)
+
+<br />  
+
+### **Running the script to change Network Configurations:**
+
+> git clone https://github.com/CiscoDevNet/webex-video-mesh-node-provisioning.git 
+
+> cd webex-video-mesh-node-provisioning
+
+> pip install -r requirements.txt
+
+> Edit the input_network.csv to include details
+
+> python3 network_changes.py
+
+<br />
+
+After running, the script lists a summary of the success and failures of network changes for each node. You can correct the csv for the failed cases and the re-run the script. Remember to disable maintenance mode on the nodes after making your changes.
+
+The Password in the csv is masked by ***** for every row whose network change is successful, and by ##### for every row whose network change failed. Enter the password again for the failed rows if the script is re-run. Do not share the original csv file with anyone as it contains password as plaintext.
 
 <br />
 

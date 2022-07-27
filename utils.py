@@ -13,6 +13,8 @@ def mask_passwords(file_name, passed_rows, failed_rows, col_num=None, passed_mas
         csv_file.close()
 
         for num, row in enumerate(data):
+            if not row:
+                continue
             if isinstance(col_num, int):
                 if num in passed_rows and row[col_num]:
                     row[col_num] = passed_masking_char * 6
@@ -46,6 +48,8 @@ def get_rows(file_name, passed_ips, failed_ips, ip_col):
         csv_file.close()
 
         for num, row in enumerate(data):
+            if not row:
+                continue
             if row[ip_col] in passed_ips:
                 passed_rows.append(num)
             elif row[ip_col] in failed_ips:

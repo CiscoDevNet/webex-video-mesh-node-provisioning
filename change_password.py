@@ -29,7 +29,7 @@ def worker(*data, row=None):
         stdout, stderr = process.communicate()
         ret_code = process.returncode
         if ret_code:
-            errors.append(f"{ip} - Invalid Video Mesh Node FQDN")
+            errors.append(f"{ip} - IP does not correspond to a valid VMN.")
             failed_rows.append(row)
             return
     url = "https://" + ip + "/api/v1/auth/users/password"
@@ -95,3 +95,4 @@ if __name__ == "__main__":
         print("\n Could not mask the passwords")
 
     print("\n")
+
