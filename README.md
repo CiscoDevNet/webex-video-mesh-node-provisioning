@@ -7,6 +7,7 @@
 * [External Network Configuration](#dual-ip)
 * [Maintenance Mode](#maintenance-mode)
 * [Network Changes (Day 2 Support)](#network)
+* [Video Mesh Node server certificate](#server-cert)
 
 <br />
 
@@ -398,5 +399,13 @@ The Password in the csv is masked by ***** for every row whose network change is
 <br />
 
 ---
+
+<br />
+
+## <a id="server-cert"></a> **Video Mesh Node server certificate**
+
+Please refer to the below link for details:
+
+[Certificate Management of Video Mesh Nodes](server_cert_management/README.md)
 
 <br />
