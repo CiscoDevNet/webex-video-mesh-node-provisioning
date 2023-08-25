@@ -1,7 +1,7 @@
 import csv
 import signal
 from contextlib import contextmanager
-from pyVim.connect import SmartConnectNoSSL
+from pyVim import connect
 
 TIMEOUT = 20
 MESSAGE = f'Could not connect. Timed-out after {TIMEOUT} seconds'
@@ -65,7 +65,7 @@ def host_validation(input_file):
             passwd = next(iter(host_dict[host][user]))
             try:
                 with time_out(TIMEOUT):
-                    si = SmartConnectNoSSL(host=host, user=user, pwd=passwd)
+                    si = connect.SmartConnect(host=host, user=user, pwd=passwd, disableSslCertValidation=True)
                 if si is None:
                     connection_issue.append(host)
                     exit_flag = True

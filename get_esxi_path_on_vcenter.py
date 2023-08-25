@@ -2,7 +2,7 @@ from pyVim import connect
 
 
 def get_esxi_entity(vcenter, username, passwd, esxi_name):
-    si = connect.SmartConnectNoSSL(host=vcenter, user=username, pwd=passwd)
+    si = connect.SmartConnect(host=vcenter, user=username, pwd=passwd, disableSslCertValidation=True)
     content = si.RetrieveContent()
 
     host_list = []
